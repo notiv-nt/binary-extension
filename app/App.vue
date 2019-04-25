@@ -25,7 +25,7 @@
     <label class="form-field flex-col-6">
       <input
         class="form-control"
-        v-model.number="params.amount"
+        v-model.number="config.amount"
         placeholder="Amount $"
       >
     </label>
@@ -65,8 +65,8 @@
         </select>
       </label>
 
-      <button @click="buy(deal)" class="buy flex-col">Buy</button>
-      <button @click="sell(deal)" class="sell flex-col">Sell</button>
+      <button @click="buyContract(deal, 'call')" class="buy flex-col">Buy</button>
+      <button @click="buyContract(deal, 'put')" class="sell flex-col">Sell</button>
     </div>
   </div>
 
@@ -117,6 +117,7 @@ import BinaryApi from './BinaryApi';
 const defaultConfig = JSON.stringify({
   isVisible: true,
   percent: null,
+  amount: 2,
   token: '',
 });
 
@@ -143,7 +144,6 @@ export default {
 
     params: {
       symbol: '',
-      amount: 2,
       basis: 'stake',
     },
 
@@ -186,17 +186,18 @@ export default {
       this.symbols = active_symbols;
     },
 
-    async buy(deal) {
+    async buyContract(deal, type) {
       const res = await this.api
         .send({
           buy: 1,
           parameters: {
-            ...this.params, // symbol, amount, basis
+            ...this.params, // symbol, basis
             ...deal, // duration, duration_unit
-            contract_type: 'CALL',
+            amount: this.config.amount,
+            contract_type: type.toUpperCase(),
             currency: 'USD',
           },
-          price: this.params.amount,
+          price: this.config.amount,
         })
         .catch((e) => e);
 
@@ -204,8 +205,6 @@ export default {
         this.error = res.message;
         return;
       }
-
-      console.dir(res);
     },
 
     addDeal() {
@@ -264,34 +263,6 @@ export default {
       f();
     },
 
-    setResizeHandler() {
-      const handler = this.$refs.handler;
-
-      let downPos = null;
-      let height = 0;
-      let diff = 0;
-
-      const onMouseUp = () => {
-        document.removeEventListener('mousemove', onMouseMove);
-      };
-
-      const onMouseMove = (e) => {
-        diff = downPos - e.y;
-
-        document.querySelector('.widgetbar-widget.widgetbar-widget-watchlist .widgetbar-widgetbody').style.height = `${height - diff}px`;
-      };
-
-      handler.addEventListener('mousedown', (e) => {
-        downPos = e.y;
-
-        height = document.querySelector('.widgetbar-widget.widgetbar-widget-watchlist .widgetbar-widgetbody').clientHeight;
-
-        document.addEventListener('mousemove', onMouseMove);
-      });
-
-      document.addEventListener('mouseup', onMouseUp);
-    },
-
     async authorize() {
       const { authorize } = await this.api.send({
         authorize: this.config.token,
@@ -313,20 +284,25 @@ export default {
       }, 10000));
 
       this.watchForCurrency();
-
-      localStorage.setItem('BAPI_token', this.config.token);
     },
 
     onPercentChange() {
-      localStorage
-    }
+      if (this.config.percent) {
+        const percent = this.getBalancePercent();
 
+        this.config.amount = parseInt(percent);
+      }
+    },
+
+    getBalancePercent() {
+     return this.account.balance.value * (this.config.percent / 100);
+    }
   },
 
   watch: {
     config: {
       handler(n, o) {
-        console.log(n);
+        localStorage.setItem('BA_CONFIG', JSON.stringify(n));
       },
       deep: true
     }
@@ -352,7 +328,7 @@ export default {
 
 <style lang="scss" scoped>
 .host {
-  font: 10px/1.4 'Trebuchet MS', Arial, sans-serif;
+  font: 13px/1.4 'Trebuchet MS', Arial, sans-serif;
   color: #333;
   padding: 1em;
   display: block !important;
@@ -364,7 +340,6 @@ export default {
 
   .form-field {
     display: block;
-    font-size: 1.3em;
     margin-bottom: .5rem;
   }
 
@@ -437,7 +412,6 @@ export default {
   .add-deal {
     float: right;
     color: #000;
-    font-size: 1.3em;
   }
 
   .deal-wrap {
@@ -484,7 +458,6 @@ export default {
     align-self: center;
     border-radius: 5px;
     border: 1px solid transparent;
-    font-size: 1.3em;
     letter-spacing: 0.07em;
     line-height: 1;
     font-weight: 300;
@@ -515,6 +488,20 @@ export default {
     border: 1px solid #f8aaa4;
     border-radius: 4px;
     margin: .5rem 0;
+  }
+
+  table {
+    display: table;
+    table-layout: fixed;
+    width: 100%;
+  }
+
+  tr {
+    display: table-row;
+  }
+
+  td, th {
+    display: table-cell;
   }
 }
 </style>
