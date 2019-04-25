@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en" ng-app="app">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700">
+	<link rel="stylesheet" href="lib/main.css">
+</head>
+<body ng-controller="MainCtrl as main">
+
+	<h4 ng-click="showConfig = !showConfig">Конфиг</h4>
+
+	<form action="" class="config" ng-show="showConfig">
+
+		<div class="form__field">
+			<input type="text" placeholder="Токен" ng-model="main.config.token">
+		</div>
+
+		<div class="form__field">
+			<input type="text" placeholder="% от депозита" ng-model="main.config.percentageOfDepo">
+		</div>
+
+		<div class="form__field">
+			<input type="text" placeholder="Кол-во свечей" ng-model="main.config.countOfCandles">
+		</div>
+
+		<div class="form__field">
+			<label>
+				<input type="checkbox" ng-model="main.config.onlyForex"> Только форекс пары
+			</label>
+		</div>
+
+		<div class="form__field">
+			<label>
+				<input type="checkbox" ng-model="main.config.autoDetectCurrency"> Автоподбор валютной пары
+			</label>
+		</div>
+
+		<div class="form__field">
+			<label>
+				<input type="checkbox" ng-model="main.config.debug"> Debug
+			</label>
+		</div>
+
+	</form>
+
+	<p ng-hide="main.config.debug">
+		Виртуальный счет:
+		<span ng-class="{ 'yes': main.user.is_virtual, 'no': !main.user.is_virtual }">{{ main.user.is_virtual ? 'Да' : 'Нет' }}</span>
+	</p>
+
+	<table ng-show="main.config.debug">
+		<tr>
+			<th>Демо</th>
+			<th>Валюта</th>
+			<th>Баланс</th>
+		</tr>
+
+		<tr>
+			<td ng-class="{ 'yes': main.user.is_virtual, 'no': !main.user.is_virtual }">{{ main.user.is_virtual ? 'Да' : 'Нет' }}</td>
+			<td>{{ main.user.currency }}</td>
+			<td>{{ main.user.balance | currency }}</td>
+		</tr>
+	</table>
+
+	<form action="">
+		<h3 class="form__title">Binary.com API</h3>
+
+		<div class="form__field">
+			<select ng-model="main.option.symbol" ng-options="title as symbol for (title, symbol) in main.activeSymbols"></select>
+		</div>
+
+		<div class="form__field">
+			<input type="text" placeholder="Экспирация" ng-model="main.option.duration">
+
+			<select ng-model="main.option.duration_unit" ng-options="title as unit for (title, unit) in main.units"></select>
+		</div>
+
+		<div class="form__field">
+			<input type="text" placeholder="Сумма" ng-model="main.option.amount">
+
+			<select ng-model="main.option.basis">
+				<option value="payout">Выплата</option>
+				<option value="stake">Ставка</option>
+			</select>
+		</div>
+
+		<div class="form__field form__footer">
+			<button class="call" type="button" ng-click="main.call()">Call</button>
+			<button class="put" type="button" ng-click="main.put()">Put</button>
+		</div>
+
+		<div class="form__success" ng-show="main.successMessage">
+			Контракт куплен
+		</div>
+
+		<div class="form__error" ng-show="main.errorMessage">
+			{{ main.errorMessage }}
+		</div>
+	</form>
+
+	<script src="lib/angular.min.js"></script>
+	<script src="main.js"></script>
+	<script src="BinaryApi.js"></script>
+</body>
+</html>
