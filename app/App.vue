@@ -1,154 +1,208 @@
 <template>
 <div class="host">
-  <table>
-    <tr>
-      <th>Balance</th>
-      <th>Account</th>
-      <th>Token</th>
-    </tr>
 
-    <tr>
-      <td>{{ locBalance }}</td>
-      <td>{{ account.isVirtual ? 'virtual' : 'real' }}</td>
-      <td>{{ config.token }}</td>
-    </tr>
-  </table>
+  <nav class="nav">
+    <button
+      type="button"
+      class="nav-button"
+      :disabled="!config.realToken"
+      :class="{ 'is-active': currentTab === 'real' }"
+      @click="setTab('real')"
+    >Real</button>
 
-  <div class="flex">
-    <label class="form-field flex-col-2">
-      <select v-model="params.symbol" class="form-control">
-        <option value="" disabled selected hidden>Symbol</option>
-        <option :value="symbol.symbol" v-for="symbol in locSymbols">{{ symbol.display_name }}</option>
-      </select>
-    </label>
+    <button
+      type="button"
+      class="nav-button"
+      :disabled="!config.demoToken"
+      :class="{ 'is-active': currentTab === 'demo' }"
+      @click="setTab('demo')"
+    >Demo</button>
 
-    <label class="form-field flex-col-6">
-      <input
-        class="form-control"
-        v-model.number="config.amount"
-        placeholder="Amount $"
-      >
-    </label>
-  </div>
+    <button
+      type="button"
+      class="nav-button"
+      :class="{ 'is-active': currentTab === 'config' }"
+      @click="setTab('config')"
+    >Config</button>
 
-  <div class="deal-wrap">
-    <h2 class="deal-title">Deals</h2>
+    <div class="nav-balance" v-if="config.showBalance">{{ locBalance }}</div>
+  </nav>
 
-    <button @click="addDeal" class="add-deal">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 491.86 491.86"><path d="M465.167 211.614H280.245V26.691c0-8.424-11.439-26.69-34.316-26.69s-34.316 18.267-34.316 26.69v184.924H26.69C18.267 211.614 0 223.053 0 245.929s18.267 34.316 26.69 34.316h184.924v184.924c0 8.422 11.438 26.69 34.316 26.69s34.316-18.268 34.316-26.69V280.245H465.17c8.422 0 26.69-11.438 26.69-34.316s-18.27-34.315-26.693-34.315z"/></svg>
-    </button>
-  </div>
+  <div class="body" v-if="currentTab === 'config'">
+    <label class="form-group">
+      <span class="form-label">Tokens</span>
 
-  <div v-for="deal in deals" @click.right="removeDeal(deal, $event)">
-    <div class="flex">
-      <label class="form-field flex-col-4">
-        <!-- <span class="form-label">Duration</span> -->
-
-        <input
-          type="number"
-          class="form-control"
-          v-model.number="deal.duration"
-          placeholder="Duration"
-        >
-      </label>
-
-      <label class="form-field flex-col-3">
-        <!-- <span class="form-label">Unit</span> -->
-
-        <select v-model="deal.duration_unit" class="form-control">
-          <option value="" disabled selected hidden>Unit</option>
-          <option value="t">Ticks</option>
-          <option value="s">Seconds</option>
-          <option value="m">Minutes</option>
-          <option value="h">Hours</option>
-          <option value="d">Days</option>
-        </select>
-      </label>
-
-      <button @click="buyContract(deal, 'call')" class="buy flex-col">Buy</button>
-      <button @click="buyContract(deal, 'put')" class="sell flex-col">Sell</button>
-    </div>
-  </div>
-
-  <div class="alert-danger" v-if="error">{{ error }}</div>
-
-  <div class="config">
-    <h2 @click="config.isVisible = !config.isVisible">Config</h2>
-
-    <div v-if="config.isVisible">
-      <div class="form-field">
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Token"
-          v-model="config.token"
-          @change="authorize()"
-        >
+      <div class="row">
+        <input type="text" class="form-input" v-model="config.realToken" placeholder="Real">
+        <input type="text" class="form-input" v-model="config.demoToken" placeholder="Demo">
       </div>
+    </label>
 
-      <div class="form-field">
+    <div class="row">
+      <label class="form-group">
+        <span class="form-label">% of depo</span>
+
         <input
-          type="text"
-          class="form-control"
+          class="form-input"
           placeholder="% of amount"
           v-model.number="config.percent"
           @input="onPercentChange"
         >
-      </div>
+      </label>
 
-      <label class="form-field">
-        <select v-model="params.basis" class="form-control">
+      <label class="form-group">
+        <span class="form-label">Basis</span>
+
+        <select v-model="config.basis" class="form-input">
           <option value="" disabled selected hidden>Basis</option>
           <option value="payout">Payout</option>
           <option value="stake">Stake</option>
           <option value="multiplier">Multiplier</option>
         </select>
       </label>
-
     </div>
+
+    <label class="form-group">
+      <input type="checkbox" v-model="config.showBalance"> Show Balance
+    </label>
   </div>
+
+  <div class="body" v-if="currentTab !== 'config'">
+    <div class="row">
+      <label class="form-group">
+        <span class="form-label">Symbol</span>
+
+        <select v-model="symbol" class="form-input">
+          <option value="" disabled selected hidden>Symbol</option>
+          <option :value="symbol.symbol" v-for="symbol in locSymbols">{{ symbol.display_name }}</option>
+        </select>
+      </label>
+
+      <label class="form-group">
+        <span class="form-label">Amount</span>
+
+        <input
+          class="form-input"
+          v-model.number="config.amount"
+          placeholder="Amount $"
+        >
+      </label>
+    </div>
+
+    <div class="title">
+      <span class="title-text">Deals</span>
+
+      <button
+        class="u-link"
+        type="button"
+        @click="isDealEdit = !isDealEdit"
+      >{{ isDealEdit ? 'save' : 'manage' }}</button>
+    </div>
+
+    <draggable v-model="deals">
+      <div
+        class="row deals-row"
+        v-for="deal in deals"
+        :key="deal.id"
+        :id="`deal-${deal.id}`"
+      >
+        <input class="form-input" placeholder="Duration" v-model="deal.duration">
+
+        <select v-model="deal.duration_unit" class="form-input">
+          <option :value="key" v-for="(value, key) in durationUnits">{{ value }}</option>
+        </select>
+
+        <button
+          class="btn deals-btn is-buy"
+          type="button"
+          v-if="!isDealEdit"
+          @click="buyContract(deal, 'call')"
+        >Buy</button>
+
+        <button
+          class="btn deals-btn is-sell"
+          type="button"
+          v-if="!isDealEdit"
+          @click="buyContract(deal, 'put')"
+        >Sell</button>
+
+        <button class="deals-action" type="button" v-if="isDealEdit" @click="removeDeal(deal)">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 212.982 212.982" class="u-icon">
+            <path d="M131.804 106.491l75.936-75.936c6.99-6.99 6.99-18.323 0-25.312-6.99-6.99-18.322-6.99-25.312 0L106.491 81.18 30.554 5.242c-6.99-6.99-18.322-6.99-25.312 0-6.989 6.99-6.989 18.323 0 25.312l75.937 75.936-75.937 75.937c-6.989 6.99-6.989 18.323 0 25.312 6.99 6.99 18.322 6.99 25.312 0l75.937-75.937 75.937 75.937c6.989 6.99 18.322 6.99 25.312 0 6.99-6.99 6.99-18.322 0-25.312l-75.936-75.936z" fill-rule="evenodd" clip-rule="evenodd"/>
+          </svg>
+        </button>
+      </div>
+    </draggable>
+
+    <button
+      class="u-link"
+      type="button"
+      @click="addDeal"
+      v-if="isDealEdit"
+    >add</button>
+
+    <div class="u-alert is-error" v-if="error">{{ error }}</div>
+  </div>
+
+<!--   <pre>{{ config }}</pre> <hr>
+  <pre>{{ account }}</pre> <hr>
+  <pre>{{ deals }}</pre> <hr> -->
 
 </div>
 </template>
 
 <script>
+import draggable from 'vuedraggable';
 import BinaryApi from './BinaryApi';
 
 const defaultConfig = JSON.stringify({
-  isVisible: true,
-  percent: null,
-  amount: 2,
-  token: '',
+  percent: 0,
+  amount: 1,
+  realToken: '',
+  demoToken: '',
+  showBalance: true,
+  tab: 'config',
+  basis: 'stake',
 });
 
+const defaultDeals = JSON.stringify([
+  { duration: 5, duration_unit: 'm', id: String(Math.random()).replace('.', '') },
+  { duration: 15, duration_unit: 'm', id: String(Math.random()).replace('.', '') },
+]);
+
 export default {
+  components: {
+    draggable,
+  },
+
   data: () => ({
     api: new BinaryApi('8fplJWaTEUPHq6k'),
 
+    currentTab: JSON.parse(localStorage.getItem('BA_CONFIG') || defaultConfig).tab,
     config: JSON.parse(localStorage.getItem('BA_CONFIG') || defaultConfig),
+    deals: JSON.parse(localStorage.getItem('BA_DEALS') || defaultDeals),
+    isDealEdit: false,
 
     account: {
-      balance: {
-        value: '',
-        currency: 'USD',
-      },
-      loginId: null,
+      balance: '',
+      currency: 'USD',
       isVirtual: false,
     },
 
     symbols: [],
-    deals: [
-      { duration: 5, duration_unit: 'm' },
-      { duration: 15, duration_unit: 'm' },
-    ],
-
-    params: {
-      symbol: '',
-      basis: 'stake',
-    },
+    symbol: '',
 
     error: null,
+    errorInterval: null,
     intervals: [],
+
+    durationUnits: {
+      t: 'Ticks',
+      s: 'Seconds',
+      m: 'Minutes',
+      h: 'Hours',
+      d: 'Days',
+    },
   }),
 
   computed: {
@@ -164,17 +218,31 @@ export default {
         EUR: '€',
       };
 
-      return `${currencies[this.account.balance.currency]} ${this.account.balance.value}`;
+      return `${currencies[this.account.currency]} ${this.account.balance}`;
     },
   },
 
   methods: {
+    setTab(tab) {
+      if (tab === 'config') {
+        this.currentTab = 'config';
+      }
+
+      else {
+        this.currentTab = tab;
+
+        this.authorize(tab);
+      }
+
+      this.config.tab = tab;
+    },
+
     async getBalance() {
       const { balance } = await this.api.send({
         balance: 1,
       });
 
-      this.account.balance.value = balance.balance;
+      this.account.balance = balance.balance;
     },
 
     async getSymbols() {
@@ -187,39 +255,54 @@ export default {
     },
 
     async buyContract(deal, type) {
-      const res = await this.api
-        .send({
-          buy: 1,
-          parameters: {
-            ...this.params, // symbol, basis
-            ...deal, // duration, duration_unit
-            amount: this.config.amount,
-            contract_type: type.toUpperCase(),
-            currency: 'USD',
-          },
-          price: this.config.amount,
-        })
-        .catch((e) => e);
+      if (this.errorInterval) {
+        clearInterval(this.errorInterval);
+      }
+
+      this.error = null;
+
+      const contract = {
+        buy: 1,
+        parameters: {
+          duration: deal.duration,
+          duration_unit: deal.duration_unit,
+          symbol: this.symbol,
+          amount: this.config.amount,
+          basis: this.config.basis,
+          contract_type: type.toUpperCase(),
+          currency: 'USD',
+        },
+        price: this.config.amount,
+      };
+
+      const res = await this.api.send(contract).catch((e) => e);
+
+      console.dir(res);
 
       if (res.message && res.code) {
+        this.errorInterval = setTimeout(() => {
+          this.error = null;
+        }, 3000);
+
         this.error = res.message;
-        return;
       }
     },
 
     addDeal() {
-      this.deals.push({
-        duration: 5,
+      const deal = {
+        duration: 0,
         duration_unit: 'm',
+        id: String(Math.random()).replace('.', ''),
+      };
+
+      this.deals.push(deal);
+      this.$nextTick(() => {
+        this.$el.querySelector(`#deal-${deal.id} input`).focus();
       });
     },
 
-    removeDeal(deal, e) {
-      e.preventDefault();
-
-      let index = this.deals.indexOf(deal);
-
-      this.deals.splice(index, 1);
+    removeDeal(deal) {
+      this.deals.splice(this.deals.indexOf(deal), 1);
     },
 
     tryToSetCurrency(currency) {
@@ -230,7 +313,7 @@ export default {
       });
 
       if (isFound) {
-        this.params.symbol = isFound.symbol;
+        this.symbol = isFound.symbol;
       }
     },
 
@@ -263,15 +346,19 @@ export default {
       f();
     },
 
-    async authorize() {
+    async authorize(tab) {
+      if ((tab === 'real' && !this.config.realToken) || (tab === 'demo' && !this.config.demoToken)) {
+        return;
+      }
+
+      const token = tab === 'real' ? this.config.realToken : this.config.demoToken;
       const { authorize } = await this.api.send({
-        authorize: this.config.token,
+        authorize: token,
       });
 
-      this.account.balance.value = authorize.balance;
-      this.account.balance.currency = authorize.currency;
+      this.account.balance = authorize.balance;
+      this.account.currency = authorize.currency;
       this.account.isVirtual = authorize.is_virtual;
-      this.account.loginId = authorize.loginId;
 
       this.getSymbols();
 
@@ -284,6 +371,9 @@ export default {
       }, 10000));
 
       this.watchForCurrency();
+
+      // TODO:
+      this.onPercentChange();
     },
 
     onPercentChange() {
@@ -295,22 +385,31 @@ export default {
     },
 
     getBalancePercent() {
-     return this.account.balance.value * (this.config.percent / 100);
+     return this.account.balance * (this.config.percent / 100);
     }
   },
 
   watch: {
     config: {
-      handler(n, o) {
+      handler(n) {
         localStorage.setItem('BA_CONFIG', JSON.stringify(n));
       },
       deep: true
-    }
+    },
+
+    deals: {
+      handler(n) {
+        localStorage.setItem('BA_DEALS', JSON.stringify(n));
+      },
+      deep: true
+    },
   },
 
   mounted() {
     this.api.on('open', () => {
-      this.authorize();
+      if (this.config.tab !== 'config') {
+        this.authorize(this.config.tab);
+      }
     });
   },
 
@@ -327,181 +426,253 @@ export default {
 </style>
 
 <style lang="scss" scoped>
-.host {
-  font: 13px/1.4 'Trebuchet MS', Arial, sans-serif;
-  color: #333;
-  padding: 1em;
-  display: block !important;
+@mixin button-reset {
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+  justify-content: center;
+  border: 0;
+  font: inherit;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  line-height: 1;
+  text-decoration: none;
+  letter-spacing: inherit;
+  user-select: none;
+  outline: none;
+}
 
-  *:not(path) {
-    all: unset;
+.host {
+  --ba-color-1: #8798ad;
+  --ba-color-2: #333;
+  --ba-color-3: #2196F3;
+  --ba-color-5: #fcfcff;
+  --ba-color-6: #e0e7ff;
+  --ba-color-7: #eef1f6;
+  --ba-color-9: #8798ad;
+  --ba-color-10: #de5e57;
+
+  --ba-radius: 2px;
+
+  display: block !important;
+  color: var(--ba-color-2);
+  font: 12px/1 Helvetica, sans-serif;
+
+  *, ::before, ::after {
     box-sizing: border-box;
   }
+}
 
-  .form-field {
-    display: block;
-    margin-bottom: .5rem;
-  }
+.u-icon {
+  display: inline-block;
+  vertical-align: middle;
+  color: currentColor;
+  fill: currentColor;
+  width: 1em;
+  height: 1em;
+}
 
-  .form-label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: .3em;
-  }
+.u-alert {
+  display: block;
+  padding: .5em .7em;
+  border-radius: var(--ba-radius);
+  margin: .5rem 0;
+  border: 1px solid transparent;
+  font-size: .9em;
+  line-height: 1.3;
 
-  .form-control {
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    appearance: none;
-    background: #fff;
-    border-radius: 3px;
-    border: 1px solid #d8d8d8;
-    display: block;
-    width: 100%;
-    font: inherit;
-    padding: 0 0.7em;
-    height: 1.8rem;
-    line-height: 1.8rem;
-  }
-
-  .form-control::placeholder {
-    color: #bbb;
-  }
-
-  .form-control:hover,
-  .form-control:focus {
-    border-color: #09f;
-  }
-
-  .form-control:focus {
-    box-shadow: 0 0 3px #09f;
-  }
-
-  select.form-control {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 451.847 451.847'%3E%3Cpath d='M225.923 354.706c-8.098 0-16.195-3.092-22.369-9.263L9.27 151.157c-12.359-12.359-12.359-32.397 0-44.751 12.354-12.354 32.388-12.354 44.748 0l171.905 171.915 171.906-171.909c12.359-12.354 32.391-12.354 44.744 0 12.365 12.354 12.365 32.392 0 44.751L248.292 345.449c-6.177 6.172-14.274 9.257-22.369 9.257z'/%3E%3C/svg%3E");
-    background-position: right 0.5em center;
-    background-repeat: no-repeat;
-    background-size: 0.7em;
-  }
-
-  .flex {
-    display: flex;
-    margin: 0 -0.5em;
-  }
-
-  .flex-col,
-  .flex-col-1,
-  .flex-col-2,
-  .flex-col-3,
-  .flex-col-4,
-  .flex-col-5,
-  .flex-col-6 {
-    margin-left: .5em;
-    margin-right: .5em;
-    flex-shrink: 0;
-    flex-grow: 1;
-  }
-
-  .flex-col-1 { width: calc(100% / 1 - 1em); }
-  .flex-col-2 { width: calc(100% / 2 - 1em); }
-  .flex-col-3 { width: calc(100% / 3 - 1em); }
-  .flex-col-4 { width: calc(100% / 4 - 1em); }
-  .flex-col-5 { width: calc(100% / 5 - 1em); }
-  .flex-col-6 { width: calc(100% / 6 - 1em); }
-
-  .add-deal {
-    float: right;
-    color: #000;
-  }
-
-  .deal-wrap {
-    border-top: 1px solid #f1f3f6;
-    margin: 1em 0 1em;
-    padding-top: 1em;
-    display: block;
-  }
-
-  .deal-wrap::after {
-    content: '';
-    display: block;
-    clear: both;
-  }
-
-  .deal-title {
-    font-size: 1.5em;
-    font-weight: bold;
-  }
-
-  .add-deal {
-    padding: .3rem .5rem;
-    cursor: pointer;
-    margin: -.2rem;
-    border-radius: 50%;
-  }
-
-  .add-deal:hover {
-    background-color: #f0f0f0;
-  }
-
-  .add-deal svg {
-    display: inline-block;
-    vertical-align: middle;
-    width: 1em;
-    height: 1em;
-    fill: currentColor;
-    color: currentColor;
-  }
-
-  .sell,
-  .buy {
-    padding: 0 .5rem;
-    align-self: center;
-    border-radius: 5px;
-    border: 1px solid transparent;
-    letter-spacing: 0.07em;
-    line-height: 1;
-    font-weight: 300;
-    text-align: center;
-    text-transform: uppercase;
-    cursor: pointer;
-    height: 1.8rem;
-    line-height: 1.8rem;
-  }
-
-  .buy {
-    background: #2196f3;
-    color: #fff;
-  }
-
-  .sell {
-    background: #ef5350;
-    color: #fff;
-  }
-
-  .alert-danger {
-    color: #000;
-    letter-spacing: .05em;
-    font-size: 1.4em;
-    display: block;
+  &.is-error {
+    border-color: #f8aaa4;
     background-color: #f8d7dac0;
-    padding: .3rem .7rem;
-    border: 1px solid #f8aaa4;
-    border-radius: 4px;
-    margin: .5rem 0;
+  }
+}
+
+.u-link {
+  @include button-reset;
+
+  font-weight: 300;
+  line-height: 1.2;
+  color: var(--ba-color-3);
+  border-bottom: 1px dashed currentColor;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  padding-top: .2em;
+  color: var(--ba-color-1);
+  border-bottom: 1px solid var(--ba-color-7);
+
+  &-button {
+    @include button-reset;
+
+    font-weight: normal;
+    padding: .5em 0.9em;
+    position: relative;
+    letter-spacing: 0.03em;
+
+    &.is-active {
+      color: var(--ba-color-2);
+      font-weight: 600;
+      letter-spacing: 0;
+
+      &::before {
+        height: 2px;
+      }
+    }
+
+    &[disabled] {
+      cursor: not-allowed;
+      opacity: .3;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      right: 0;
+      height: 0;
+      background-color: var(--ba-color-3);
+    }
   }
 
-  table {
-    display: table;
-    table-layout: fixed;
-    width: 100%;
+  &-balance {
+    margin-left: auto;
+    margin-right: .5em;
+    font-size: .9em;
+    color: var(--ba-color-3);
+  }
+}
+
+.body {
+  padding: 10px;
+}
+
+label {
+  display: block;
+}
+
+.form-group {
+  display: block;
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.form-label {
+  font-weight: bold;
+  font-size: 1em;
+  color: var(--ba-color-2);
+  display: block;
+  margin-bottom: .5em;
+}
+
+.form-input {
+  display: block;
+  width: 100%;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  background: var(--ba-color-5);
+  border: 1px solid var(--ba-color-6);
+  border-radius: var(--ba-radius);
+  font: inherit;
+  font-family: 'Trebuchet MS', sans-serif;
+  padding: 0 0.5em;
+  letter-spacing: .03em;
+  height: 2em;
+  line-height: 2em;
+  outline: none;
+  color: var(--ba-color-2);
+
+  &:focus {
+    border-color: var(--ba-color-3);
+    box-shadow: 0 0 2px var(--ba-color-3);
   }
 
-  tr {
-    display: table-row;
+  &::placeholder {
+    font: inherit;
+    color: var(--ba-color-9);
+  }
+}
+
+select.form-input {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 9 5' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 .374l4.3 4.11L8.6.375H0z' fill='%238798AD'/%3E%3C/svg%3E");
+  background-position: right 0.5em top .7em;
+  background-repeat: no-repeat;
+  background-size: 0.82em;
+}
+
+.row {
+  display: flex;
+  margin: 0 -5px;
+
+  > * {
+    margin-left: 5px;
+    margin-right: 5px;
+  }
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--ba-color-7);
+  margin: .5em -10px 0;
+  padding: 0 10px 5px;
+  margin-bottom: 10px;
+
+  &-text {
+    font-size: 15px;
+    color: var(--ba-color-2);
+  }
+}
+
+.btn {
+  @include button-reset;
+
+  width: 100%;
+  display: flex;
+  height: 2em;
+  font-family: Helvetica, sans-serif;
+  font-weight: 300;
+  letter-spacing: .05em;
+  text-transform: lowercase;
+  border-radius: var(--ba-radius);
+
+  &, &:hover, &:focus {
+    color: #fff;
   }
 
-  td, th {
-    display: table-cell;
+  &.is-buy {
+    background: var(--ba-color-3);
   }
+
+  &.is-sell {
+    background: var(--ba-color-10);
+  }
+}
+
+.deals-row {
+  margin-bottom: 10px;
+}
+
+.deals-action {
+  @include button-reset;
+
+  padding: 0 .5em;
+
+  &:hover {
+    color: var(--ba-color-3);
+  }
+}
+
+.deals-btn {
+  width: auto;
+  min-width: 56px;
 }
 </style>

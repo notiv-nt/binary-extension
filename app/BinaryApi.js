@@ -1,9 +1,5 @@
 import TinyEmitter from './tinyemitter.min';
 
-const log = (name, ...args) => {
-  // console.log(name, ...args);
-};
-
 export default class BinaryApi extends TinyEmitter {
   constructor() {
     super();
@@ -18,29 +14,29 @@ export default class BinaryApi extends TinyEmitter {
 
     this.connect();
 
-    log('BinaryApi.constructor');
+    // console.log('BinaryApi.constructor');
   }
 
   onOpen = () => {
-    log('BinaryApi.onOpen');
+    // console.log('BinaryApi.onOpen');
 
     this.emit('open');
   };
 
   onClose = () => {
-    log('BinaryApi.onClose');
+    // console.log('BinaryApi.onClose');
 
     this.connect();
   };
 
   onError = (e) => {
-    log('BinaryApi.onError', e);
+    // console.log('BinaryApi.onError', e);
   };
 
   onMessage = (e) => {
     const data = JSON.parse(e.data);
 
-    log('BinaryApi.onMessage', data);
+    // console.log('BinaryApi.onMessage', data);
 
     if (data && data.echo_req) {
       let key = data.echo_req[this.secretKey];
@@ -63,7 +59,7 @@ export default class BinaryApi extends TinyEmitter {
   }
 
   send(message) {
-    log('BinaryApi.send', message);
+    // console.log('BinaryApi.send', message);
 
     return new Promise((res, rej) => {
       this.counter++;
