@@ -3,16 +3,9 @@
 	"name": "Binary API",
 	"description": "...",
 	"version": "1.0",
-	// "browser_action": {
-	// 	"default_popup": "popup.html"
-	// },
 	"icons": {
 		"128": "icons/icon.png"
 	},
-	// "background": {
-	// 	"scripts": ["js/background.js"],
-	// 	"persistent": false
-	// },
 	"content_scripts": [
 		{
 			"matches": ["https://www.tradingview.com/*", "http://www.tradingview.com/*"],
